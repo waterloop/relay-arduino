@@ -4,6 +4,8 @@
 #include <CAN.h>
 #include <SPI.h>
 #include <SD.h>
+#include <ArduinoModbus.h>
+#include <cassert>
 
 File packetStore;
 char packetBuffer[UDP_TX_PACKET_MAX_SIZE];  // buffer to hold incoming packet
@@ -15,7 +17,7 @@ void setup() {
   // CAN bus init at 500 kbps
   if (!CAN.begin(500E3)) {
     Serial.println("Starting CAN failed!");
-    while (1);
+    while (1); // This endlessly loops at this point so no further code is executed
   }
 
   // SD card init
@@ -24,6 +26,25 @@ void setup() {
     while (1);
   }
   packetStore = SD.open("test.txt", FILE_WRITE);
+
+  // Creating modbus TCP client for Arduino to connect to desktop
+  ModbusTCPClient client;
+  // Connecting client to server
+
+  auto start_time = millis();
+  auto end_time = start_time;
+
+  // While the client has not successfully connected to the server,
+  // keep retrying connection. After a ten seconds, stop trying.
+  while (!client.begin("192.169.0.0", 8080) && !client.connected()) {
+    Serial.println("TCP Connection in progress...");
+    if((endtime - start_time) >= 10000) {
+      Serial.println("Failed connecting to server " + "192.168.0.0:" + 8080); // We will edit the server ip and port to become variables later on.
+      client.stop();
+      while (1);
+    }
+    end_time = millis();
+  }
 }
 
 void loop() {
@@ -56,6 +77,11 @@ void loop() {
     
     // create a tcp packet
     // figure out how to send tcp packet to desktop!
+
+    
+
+
+
   }
 
   packetStore.close();

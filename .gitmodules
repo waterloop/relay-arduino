@@ -1,0 +1,6 @@
+[submodule "arduino-CAN"]
+	path = arduino-CAN
+	url = https://github.com/sandeepmistry/arduino-CAN.git
+[submodule "Arduino"]
+	path = Arduino
+	url = https://github.com/esp8266/Arduino.git
