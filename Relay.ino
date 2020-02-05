@@ -89,16 +89,19 @@ void loop() {
         Serial.println("Error opening dataLog.txt");
       }
 
+// TCP works fine with the following code commented
+// need to fix CAN.write issues
+
       // create and send CAN packet
       // packet has maximum size of 8 bytes
-  
+
       // create CAN packet
-      Serial.println("Starting CAN packet");
-      CAN.beginPacket(messageId);
-      CAN.write(buf, BUFFER_SIZE_CAN);
-      CAN.endPacket();
-      Serial.println("Sent CAN Packet");
-      delay(1000);
+//      Serial.println("Starting CAN packet");
+//      CAN.beginPacket(messageId);
+//      CAN.write(buf, BUFFER_SIZE_CAN);
+//      CAN.endPacket();
+//      Serial.println("Sent CAN Packet");
+//      delay(1000);
     }
   }
   Serial.println("Client disconnected.");
