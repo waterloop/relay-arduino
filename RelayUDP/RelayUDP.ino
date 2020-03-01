@@ -11,6 +11,7 @@ byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
 IPAddress ip(169, 254, 167, 62);
 IPAddress gateway(192, 168, 1, 1);
 IPAddress subnet(255, 255, 0, 0);
+IPAddress dns(8,8,8,8);
 
 // UDP CONFIGURATIONS
 unsigned int localPort = 23;
@@ -18,8 +19,9 @@ char packetBuffer[UDP_TX_PACKET_MAX_SIZE];
 EthernetUDP Udp;
 char ReplyBuffer[] = "acknowledged";
 
+int messageId = 123;
 
-
+void onRecieve(int packetSize);
 
 void setup() {
   // CONFIGURE THE CS PIN FOR THE EHTERNET SHIELD
@@ -29,7 +31,7 @@ void setup() {
   Serial.begin(9600);
   while (!Serial);
 
-  Ethernet.begin(mac, ip, gateway, subnet);
+  Ethernet.begin(mac, ip, dns, gateway, subnet);
   
   if (Ethernet.hardwareStatus() == EthernetNoHardware) {
     Serial.println("Ethernet shield was not found.  Sorry, can't run without hardware. :(");
@@ -81,9 +83,9 @@ void loop() {
      if (dataLog) {
        dataLog.println("UDP: ");
        dataLog.print("[id: ");
-       dataLog.print(m);
+       //dataLog.print(m);
        dataLog.print(", data: ");
-       dataLog.print(buf);
+       dataLog.print(packetBuffer);
        dataLog.print("]");
        dataLog.println();
        dataLog.flush();
@@ -97,12 +99,24 @@ void loop() {
      // create CAN packet
      Serial.println("Starting CAN packet");
      CAN.beginPacket(messageId);
-     CAN.write(buf, BUFFER_SIZE_CAN);
+     CAN.write(packetBuffer, BUFFER_SIZE_CAN);
      CAN.endPacket();
      Serial.println("Sent CAN Packet");
-     delay(1000);
+
+     Serial.println("SENDING VIA UDP !!!!");
+
+     Serial.println("...wgawhgoiuhgioHG");
+    // REPLACED WITH A UDP SEND
+    Serial.println("IP: "); //+ Udp.remoteIP());
+
+    Serial.println("...BYE");
+    Serial.println("Port: "); //+ Udp.remotePort());
+    Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
+    Udp.write(ReplyBuffer);
+    int result = Udp.endPacket();
+    Serial.println(result);
+    Serial.println("Done Sending");
    }
-  Serial.println("Client disconnected.");
 }
 
 
@@ -117,36 +131,37 @@ void onReceive(int packetSize) {
   char data[BUFFER_SIZE_CAN];
 
   CAN.readBytes(data, BUFFER_SIZE_CAN);
-  Serial.print("CAN: ");
-  Serial.print("[id: ");
-  Serial.print(CAN.packetId(), HEX);
-  Serial.print(", data: ");
-  Serial.print(data);
-  Serial.print("]");
-  Serial.println();
+//  Serial.print("CAN: ");
+//  Serial.print("[id: ");
+//  Serial.print(CAN.packetId(), HEX);
+//  Serial.print(", data: ");
+//  Serial.print(data);
+//  Serial.print("]");
+//  Serial.println();
      
-  // save packet to sd card
-  if (dataLog) {
-    Serial.println("Saving CAN packet to log.");
-    dataLog.print("CAN: ");
-    dataLog.print("[id: ");
-    dataLog.print(CAN.packetId(), HEX);
-    dataLog.print(", data: ");
-    dataLog.print(data);
-    dataLog.print("]");
-    dataLog.println();
-    dataLog.flush();
-  } else {
-    Serial.println("Error opening dataLog.txt");
-  }
+//  // save packet to sd card
+//  if (dataLog) {
+//    Serial.println("Saving CAN packet to log.");
+//    dataLog.print("CAN: ");
+//    dataLog.print("[id: ");
+//    dataLog.print(CAN.packetId(), HEX);
+//    dataLog.print(", data: ");
+//    dataLog.print(data);
+//    dataLog.print("]");
+//    dataLog.println();
+//    dataLog.flush();
+//  } else {
+//    Serial.println("Error opening dataLog.txt");
+//  }
 
-  if (client.connected()) {
-    // create a tcp packet
-    Serial.println("Creating TCP packet.");
-    client.write(CAN.packetId());
-    client.write(data, sizeof(data));
-    data[0] = '\0';
-    Serial.println("Sent TCP packet");
-    // TODO: wait for confirmation that packet was received. if no response, resent packet until response arrives
-  }
+//  Serial.println("SENDING VIA UDP");
+//  // REPLACED WITH A UDP SEND
+//  Serial.println("IP: " + Udp.remoteIP());
+//  Serial.println("Port: " + Udp.remotePort());
+//  Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
+//  Udp.write(ReplyBuffer);
+//  int result = Udp.endPacket();
+//  Serial.println(result);
+//  Serial.println("Done Sending");
+  
 }
