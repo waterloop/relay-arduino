@@ -1,7 +1,6 @@
 #include <SPI.h>
 #include <SD.h>
 #include <Ethernet.h>
-#define protected public // I'm sorry
 #include <CAN.h>
 
 int BUFFER_SIZE_CAN = 8;
@@ -68,13 +67,14 @@ void loop() {
     Udp.beginPacket(desktopip, desktopport);
     uint32_t packetId = (uint32_t)CAN.packetId();
     Udp.write((uint8_t*)&packetId, 4);
-    Udp.write(CAN._rxData, packetSize);
+    CAN.readBytes(buf, packetSize);
+    Udp.write(buf, packetSize);
     Udp.endPacket();
     
     sdlog = SD.open("log.txt", FILE_WRITE); // Filename must be <= 8 characters long.
     sdlog.write("CAN ");
     sdlog.write((uint8_t*)&packetId, 4);
-    sdlog.write((uint8_t*)CAN._rxData, packetSize);
+    sdlog.write((uint8_t*)buf, packetSize);
     sdlog.write('\n');
     Serial.println("Wrote CAN to SD card!!");
     sdlog.close();
