@@ -25,9 +25,9 @@ void loop() {
   int lenCAN = CAN.parsePacket();
   if(lenCAN > 0) {
     Serial.print(lenCAN);
-    CAN.beginPacket(0x12);
-    int len = sprintf(s, "r%d", lenCAN);
-    CAN.write(s, len);
+    CAN.beginPacket(CAN.packetId());
+    CAN.readBytes(s, lenCAN);
+    CAN.write(s, lenCAN);
     CAN.endPacket();
   }
 }
