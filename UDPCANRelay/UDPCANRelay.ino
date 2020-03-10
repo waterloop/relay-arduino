@@ -1,30 +1,30 @@
 #include <SPI.h>
 #include <SD.h>
 #include <Ethernet.h>
-#define protected public // I'm sorry
 #include <CAN.h>
 
 int BUFFER_SIZE_CAN = 8;
+int BUFFER_SIZE_CAN_ID = 2;
 int BUFFER_SIZE_TCP = 8;
+
 byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
 
-IPAddress relayip(192, 168, 0, 9);
-int relayport = 2323;
-IPAddress desktopip(192, 168, 0, 255);
-int desktopport = 2323;
+IPAddress relayIp(192, 168, 0, 9);
+int relayPort = 2323;
+IPAddress desktopIp(192, 168, 0, 6);
+int desktopPort = 2323;
 
 unsigned char buf[UDP_TX_PACKET_MAX_SIZE];
-unsigned char sprintfbuf[24];
 
 EthernetUDP Udp;
 
 void setup() {
   Serial.begin(9600);
   while(!Serial);
-  Ethernet.begin(mac, relayip);
-  while(!Udp.begin(relayport))Serial.println("Udp.begin failed");
-  while(!CAN.begin(500E3))Serial.println("CAN.begin failed");
-  while(!SD.begin(4))Serial.println("SD.begin failed");
+  Ethernet.begin(mac, relayIp);
+  while(!Udp.begin(relayPort)) Serial.println("Udp.begin failed");
+  while(!CAN.begin(500E3)) Serial.println("CAN.begin failed");
+  while(!SD.begin(4)) Serial.println("SD.begin failed");
   Serial.println("Successful init");
 }
 
@@ -34,9 +34,9 @@ void loop() {
   if(packetSize) {
     // assert Udp.remoteIP() == desktopip
     // assert Udp.remotePort() == desktopport
-    if (4 < packetSize && packetSize <= 12) { // note that we do not allow zero-length CAN packets
+    if (BUFFER_SIZE_CAN_ID < packetSize && packetSize <= BUFFER_SIZE_CAN + BUFFER_SIZE_CAN_ID) { // note that we do not allow zero-length CAN packets
       Udp.read(buf, UDP_TX_PACKET_MAX_SIZE);
-      uint32_t messageId = *((uint32_t*)buf);
+      uint16_t messageId = *((uint16_t*)buf); // Type depends on BUFFER_SIZE_CAN_ID
       
       Serial.println("received udp");
       Serial.println(messageId);
@@ -44,10 +44,10 @@ void loop() {
         Serial.println("WARNING: message id too big, truncating");
         messageId &= (1<<11) - 1;
       }
-      Serial.println(packetSize - 4);
+      Serial.println(packetSize - BUFFER_SIZE_CAN_ID);
       
       CAN.beginPacket(messageId);
-      CAN.write(buf + 4, packetSize - 4);
+      CAN.write(buf + BUFFER_SIZE_CAN_ID, packetSize - BUFFER_SIZE_CAN_ID);
       CAN.endPacket();
 
       sdlog = SD.open("log.txt", FILE_WRITE); // Filename must be <= 8 characters long.
@@ -65,16 +65,17 @@ void loop() {
   if(packetSize) {
     Serial.println("received can");
     
-    Udp.beginPacket(desktopip, desktopport);
-    uint32_t packetId = (uint32_t)CAN.packetId();
-    Udp.write((uint8_t*)&packetId, 4);
-    Udp.write(CAN._rxData, packetSize);
+    Udp.beginPacket(desktopIp, desktopPort);
+    uint16_t packetId = (uint16_t)CAN.packetId(); // Type depends on BUFFER_SIZE_CAN_ID
+    Udp.write((uint8_t*)&packetId, BUFFER_SIZE_CAN_ID);
+    CAN.readBytes(buf, packetSize);
+    Udp.write(buf, packetSize);
     Udp.endPacket();
     
     sdlog = SD.open("log.txt", FILE_WRITE); // Filename must be <= 8 characters long.
     sdlog.write("CAN ");
-    sdlog.write((uint8_t*)&packetId, 4);
-    sdlog.write((uint8_t*)CAN._rxData, packetSize);
+    sdlog.write((uint8_t*)&packetId, BUFFER_SIZE_CAN_ID);
+    sdlog.write((uint8_t*)buf, packetSize);
     sdlog.write('\n');
     Serial.println("Wrote CAN to SD card!!");
     sdlog.close();
